@@ -26,3 +26,8 @@ logging:
   level:
     org.springframework: INFO
     com.astitva.collabflow: DEBUG
+
+app:
+  jwt:
+    secret: 0123456789012345678901234567890123456789012345678901234567890123
+    expiration-ms: 86400000

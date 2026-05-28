@@ -9,5 +9,4 @@ public class CollabflowBackendApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(CollabflowBackendApplication.class, args);
 	}
-
 }

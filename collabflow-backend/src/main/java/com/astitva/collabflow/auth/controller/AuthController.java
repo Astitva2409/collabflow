@@ -1,5 +1,7 @@
 package com.astitva.collabflow.auth.controller;
 
+import com.astitva.collabflow.auth.dto.LoginRequest;
+import com.astitva.collabflow.auth.dto.LoginResponse;
 import com.astitva.collabflow.auth.dto.RegisterRequest;
 import com.astitva.collabflow.auth.dto.RegisterResponse;
 import com.astitva.collabflow.auth.service.AuthService;
@@ -22,5 +24,11 @@ public class AuthController {
         RegisterResponse response = authService.register(request);
 
         return ApiResponse.success("User registered successfully", response);
+    }
+
+    @PostMapping("/login")
+    public ApiResponse<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
+        LoginResponse response = authService.login(request);
+        return ApiResponse.success("Login successful", response);
     }
 }
