@@ -28,9 +28,9 @@ public class UserController {
         return ApiResponse.success("Current user fetched successfully", response);
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
-    @GetMapping("/admin-test")
-    public ApiResponse<String> adminTest() {
-        return ApiResponse.success("Admin endpoint accessed successfully", "ADMIN_OK");
-    }
+//    @PreAuthorize("hasRole('ADMIN')")
+//    @GetMapping("/admin-test")
+//    public ApiResponse<String> adminTest() {
+//        return ApiResponse.success("Admin endpoint accessed successfully", "ADMIN_OK");
+//    }
 }
