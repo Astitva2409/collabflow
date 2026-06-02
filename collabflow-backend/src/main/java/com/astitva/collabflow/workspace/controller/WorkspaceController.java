@@ -2,8 +2,7 @@ package com.astitva.collabflow.workspace.controller;
 
 import com.astitva.collabflow.auth.security.CustomUserDetails;
 import com.astitva.collabflow.common.response.ApiResponse;
-import com.astitva.collabflow.workspace.dto.CreateWorkspaceRequest;
-import com.astitva.collabflow.workspace.dto.WorkspaceResponse;
+import com.astitva.collabflow.workspace.dto.*;
 import com.astitva.collabflow.workspace.service.WorkspaceService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -48,5 +47,51 @@ public class WorkspaceController {
         WorkspaceResponse response = workspaceService.getWorkspaceById(workspaceId, currentUser.getId());
 
         return ApiResponse.success("Workspace fetched successfully", response);
+    }
+
+    @PostMapping("/{workspaceId}/members")
+    @ResponseStatus(HttpStatus.CREATED)
+    public ApiResponse<Void> addMember(
+            @PathVariable UUID workspaceId,
+            @Valid @RequestBody AddMemberRequest request,
+            @AuthenticationPrincipal CustomUserDetails currentUser
+    ) {
+        workspaceService.addMember(workspaceId, currentUser.getId(), request);
+
+        return ApiResponse.success("Member added successfully");
+    }
+
+    @GetMapping("/{workspaceId}/members")
+    public ApiResponse<List<WorkspaceMemberResponse>> getMembers(
+            @PathVariable UUID workspaceId,
+            @AuthenticationPrincipal CustomUserDetails currentUser
+    ) {
+        List<WorkspaceMemberResponse> response =
+                workspaceService.getMembers(workspaceId, currentUser.getId());
+
+        return ApiResponse.success("Members fetched successfully", response);
+    }
+
+    @PatchMapping("/{workspaceId}/members/{userId}/role")
+    public ApiResponse<Void> updateRole(
+            @PathVariable UUID workspaceId,
+            @PathVariable UUID userId,
+            @Valid @RequestBody UpdateRoleRequest request,
+            @AuthenticationPrincipal CustomUserDetails currentUser
+    ) {
+        workspaceService.updateMemberRole(workspaceId, currentUser.getId(), userId, request);
+
+        return ApiResponse.success("Member role updated successfully");
+    }
+
+    @DeleteMapping("/{workspaceId}/members/{userId}")
+    public ApiResponse<Void> removeMember(
+            @PathVariable UUID workspaceId,
+            @PathVariable UUID userId,
+            @AuthenticationPrincipal CustomUserDetails currentUser
+    ) {
+        workspaceService.removeMember(workspaceId, currentUser.getId(), userId);
+
+        return ApiResponse.success("Member removed successfully");
     }
 }

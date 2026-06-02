@@ -1,10 +1,11 @@
 package com.astitva.collabflow.workspace.service;
 
+import com.astitva.collabflow.common.exception.BadRequestException;
+import com.astitva.collabflow.common.exception.ForbiddenException;
 import com.astitva.collabflow.common.exception.ResourceNotFoundException;
 import com.astitva.collabflow.user.entity.User;
 import com.astitva.collabflow.user.repository.UserRepository;
-import com.astitva.collabflow.workspace.dto.CreateWorkspaceRequest;
-import com.astitva.collabflow.workspace.dto.WorkspaceResponse;
+import com.astitva.collabflow.workspace.dto.*;
 import com.astitva.collabflow.workspace.entity.Workspace;
 import com.astitva.collabflow.workspace.entity.WorkspaceMember;
 import com.astitva.collabflow.workspace.entity.WorkspaceRole;
@@ -65,6 +66,89 @@ public class WorkspaceService {
         return mapToResponse(membership.getWorkspace(), membership.getRole());
     }
 
+    @Transactional
+    public void addMember(UUID workspaceId, UUID currentUserId, AddMemberRequest request) {
+
+        WorkspaceMember currentUserMembership = getMembership(workspaceId, currentUserId);
+        validateOwnerOrAdmin(currentUserMembership);
+
+        if (workspaceMemberRepository.existsByWorkspace_IdAndUser_Id(workspaceId, request.userId())) {
+            throw new BadRequestException("User is already a member of this workspace");
+        }
+
+        User user = userRepository.findById(request.userId())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        if (request.role() == WorkspaceRole.OWNER) {
+            throw new BadRequestException("Cannot assign OWNER role while adding member");
+        }
+
+        WorkspaceMember newMember = WorkspaceMember.builder()
+                .workspace(currentUserMembership.getWorkspace())
+                .user(user)
+                .role(request.role())
+                .build();
+
+        workspaceMemberRepository.save(newMember);
+    }
+
+    @Transactional(readOnly = true)
+    public List<WorkspaceMemberResponse> getMembers(UUID workspaceId, UUID currentUserId) {
+
+        getMembership(workspaceId, currentUserId); // ensures user belongs
+
+        return workspaceMemberRepository.findAllByWorkspace_Id(workspaceId)
+                .stream()
+                .map(member -> new WorkspaceMemberResponse(
+                        member.getUser().getId(),
+                        member.getUser().getFullName(),
+                        member.getUser().getEmail(),
+                        member.getRole(),
+                        member.getJoinedAt()
+                ))
+                .toList();
+    }
+
+    @Transactional
+    public void updateMemberRole(UUID workspaceId, UUID currentUserId, UUID targetUserId, UpdateRoleRequest request) {
+
+        if (request.role() == WorkspaceRole.OWNER) {
+            throw new BadRequestException("Cannot assign OWNER role");
+        }
+
+        WorkspaceMember currentUserMembership = getMembership(workspaceId, currentUserId);
+
+        if (currentUserMembership.getRole() != WorkspaceRole.OWNER) {
+            throw new ForbiddenException("Only workspace owner can update roles");
+        }
+
+        WorkspaceMember targetMembership = getMembership(workspaceId, targetUserId);
+
+        if (targetMembership.getRole() == WorkspaceRole.OWNER) {
+            throw new BadRequestException("Cannot change role of workspace owner");
+        }
+
+        targetMembership.setRole(request.role());
+    }
+
+    @Transactional
+    public void removeMember(UUID workspaceId, UUID currentUserId, UUID targetUserId) {
+
+        WorkspaceMember currentUserMembership = getMembership(workspaceId, currentUserId);
+
+        if (currentUserMembership.getRole() != WorkspaceRole.OWNER) {
+            throw new BadRequestException("Only workspace owner can remove members");
+        }
+
+        if (currentUserId.equals(targetUserId)) {
+            throw new BadRequestException("Owner cannot remove himself");
+        }
+
+        WorkspaceMember targetMembership = getMembership(workspaceId, targetUserId);
+
+        workspaceMemberRepository.delete(targetMembership);
+    }
+
     private WorkspaceResponse mapToResponse(Workspace workspace, WorkspaceRole role) {
         return new WorkspaceResponse(
                 workspace.getId(),
@@ -82,5 +166,17 @@ public class WorkspaceService {
         }
 
         return description.trim();
+    }
+
+    private WorkspaceMember getMembership(UUID workspaceId, UUID userId) {
+        return workspaceMemberRepository
+                .findByWorkspace_IdAndUser_Id(workspaceId, userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Workspace not found"));
+    }
+
+    private void validateOwnerOrAdmin(WorkspaceMember member) {
+        if (member.getRole() != WorkspaceRole.OWNER && member.getRole() != WorkspaceRole.ADMIN) {
+            throw new BadRequestException("You do not have permission to perform this action");
+        }
     }
 }
