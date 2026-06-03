@@ -1,11 +1,14 @@
 package com.astitva.collabflow.workspace.service;
 
 import com.astitva.collabflow.common.exception.BadRequestException;
-import com.astitva.collabflow.common.exception.ForbiddenException;
 import com.astitva.collabflow.common.exception.ResourceNotFoundException;
 import com.astitva.collabflow.user.entity.User;
 import com.astitva.collabflow.user.repository.UserRepository;
-import com.astitva.collabflow.workspace.dto.*;
+import com.astitva.collabflow.workspace.dto.AddMemberRequest;
+import com.astitva.collabflow.workspace.dto.CreateWorkspaceRequest;
+import com.astitva.collabflow.workspace.dto.UpdateRoleRequest;
+import com.astitva.collabflow.workspace.dto.WorkspaceMemberResponse;
+import com.astitva.collabflow.workspace.dto.WorkspaceResponse;
 import com.astitva.collabflow.workspace.entity.Workspace;
 import com.astitva.collabflow.workspace.entity.WorkspaceMember;
 import com.astitva.collabflow.workspace.entity.WorkspaceRole;
@@ -30,6 +33,7 @@ public class WorkspaceService {
     private final WorkspaceRepository workspaceRepository;
     private final WorkspaceMemberRepository workspaceMemberRepository;
     private final UserRepository userRepository;
+    private final WorkspaceAccessService workspaceAccessService;
 
     /**
      * Creates a new workspace.
@@ -66,7 +70,6 @@ public class WorkspaceService {
                 .build();
 
         WorkspaceMember savedMembership = workspaceMemberRepository.save(ownerMembership);
-
         return mapToResponse(savedWorkspace, savedMembership.getRole());
     }
 
@@ -86,15 +89,11 @@ public class WorkspaceService {
     /**
      * Fetches one workspace by ID.
      *
-     * Important:
-     * User should only be able to fetch workspace if user is a member.
-     *
-     * So we do not simply call workspaceRepository.findById().
-     * Instead, we check membership using workspaceId + currentUserId.
+     * Current user must be a member of that workspace.
      */
     @Transactional(readOnly = true)
     public WorkspaceResponse getWorkspaceById(UUID workspaceId, UUID currentUserId) {
-        WorkspaceMember membership = getMembership(workspaceId, currentUserId);
+        WorkspaceMember membership = workspaceAccessService.getMembership(workspaceId, currentUserId);
 
         return mapToResponse(membership.getWorkspace(), membership.getRole());
     }
@@ -110,9 +109,8 @@ public class WorkspaceService {
      */
     @Transactional
     public void addMember(UUID workspaceId, UUID currentUserId, AddMemberRequest request) {
-        WorkspaceMember currentUserMembership = getMembership(workspaceId, currentUserId);
-
-        validateOwnerOrAdmin(currentUserMembership);
+        WorkspaceMember currentUserMembership = workspaceAccessService.getMembership(workspaceId, currentUserId);
+        workspaceAccessService.validateCanManageMembers(currentUserMembership);
 
         if (request.role() == WorkspaceRole.OWNER) {
             throw new BadRequestException("Cannot assign OWNER role while adding member");
@@ -142,7 +140,7 @@ public class WorkspaceService {
      */
     @Transactional(readOnly = true)
     public List<WorkspaceMemberResponse> getMembers(UUID workspaceId, UUID currentUserId) {
-        getMembership(workspaceId, currentUserId);
+        workspaceAccessService.validateCanViewWorkspace(workspaceId, currentUserId);
 
         return workspaceMemberRepository.findAllByWorkspace_Id(workspaceId)
                 .stream()
@@ -166,17 +164,15 @@ public class WorkspaceService {
      */
     @Transactional
     public void updateMemberRole(UUID workspaceId, UUID currentUserId, UUID targetUserId, UpdateRoleRequest request) {
-        WorkspaceMember currentUserMembership = getMembership(workspaceId, currentUserId);
+        WorkspaceMember currentUserMembership = workspaceAccessService.getMembership(workspaceId, currentUserId);
 
-        if (currentUserMembership.getRole() != WorkspaceRole.OWNER) {
-            throw new ForbiddenException("Only workspace owner can update roles");
-        }
+        workspaceAccessService.validateOwner(currentUserMembership);
 
         if (request.role() == WorkspaceRole.OWNER) {
             throw new BadRequestException("Cannot assign OWNER role");
         }
 
-        WorkspaceMember targetMembership = getMembership(workspaceId, targetUserId);
+        WorkspaceMember targetMembership = workspaceAccessService.getMembership(workspaceId, targetUserId);
 
         if (targetMembership.getRole() == WorkspaceRole.OWNER) {
             throw new BadRequestException("Cannot change role of workspace owner");
@@ -194,51 +190,24 @@ public class WorkspaceService {
      */
     @Transactional
     public void removeMember(UUID workspaceId, UUID currentUserId, UUID targetUserId) {
-        WorkspaceMember currentUserMembership = getMembership(workspaceId, currentUserId);
-
-        if (currentUserMembership.getRole() != WorkspaceRole.OWNER) {
-            throw new ForbiddenException("Only workspace owner can remove members");
-        }
+        WorkspaceMember currentUserMembership = workspaceAccessService.getMembership(workspaceId, currentUserId);
+        workspaceAccessService.validateOwner(currentUserMembership);
 
         if (currentUserId.equals(targetUserId)) {
             throw new BadRequestException("Owner cannot remove himself");
         }
 
-        WorkspaceMember targetMembership = getMembership(workspaceId, targetUserId);
+        WorkspaceMember targetMembership = workspaceAccessService.getMembership(workspaceId, targetUserId);
+
+        if (targetMembership.getRole() == WorkspaceRole.OWNER) {
+            throw new BadRequestException("Cannot remove workspace owner");
+        }
 
         workspaceMemberRepository.delete(targetMembership);
     }
 
     /**
-     * Common helper method to fetch membership.
-     *
-     * If membership does not exist, we return "Workspace not found".
-     *
-     * Why not "Membership not found"?
-     * Because from security perspective, we should not reveal whether workspace exists
-     * if current user does not belong to that workspace.
-     */
-    private WorkspaceMember getMembership(UUID workspaceId, UUID userId) {
-        return workspaceMemberRepository
-                .findByWorkspace_IdAndUser_Id(workspaceId, userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Workspace not found"));
-    }
-
-    /**
-     * Checks whether current user has OWNER or ADMIN role.
-     *
-     * Used for actions like adding members.
-     */
-    private void validateOwnerOrAdmin(WorkspaceMember member) {
-        if (member.getRole() != WorkspaceRole.OWNER && member.getRole() != WorkspaceRole.ADMIN) {
-            throw new ForbiddenException("You do not have permission to perform this action");
-        }
-    }
-
-    /**
      * Converts Workspace entity + user's workspace role into response DTO.
-     *
-     * We keep this method private to avoid repeating mapping logic.
      */
     private WorkspaceResponse mapToResponse(Workspace workspace, WorkspaceRole role) {
         return new WorkspaceResponse(

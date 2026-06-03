@@ -1,7 +1,6 @@
 package com.astitva.collabflow.project.service;
 
 import com.astitva.collabflow.common.exception.BadRequestException;
-import com.astitva.collabflow.common.exception.ForbiddenException;
 import com.astitva.collabflow.common.exception.ResourceNotFoundException;
 import com.astitva.collabflow.project.dto.CreateProjectRequest;
 import com.astitva.collabflow.project.dto.ProjectResponse;
@@ -11,8 +10,7 @@ import com.astitva.collabflow.project.entity.ProjectPriority;
 import com.astitva.collabflow.project.entity.ProjectStatus;
 import com.astitva.collabflow.project.repository.ProjectRepository;
 import com.astitva.collabflow.workspace.entity.WorkspaceMember;
-import com.astitva.collabflow.workspace.entity.WorkspaceRole;
-import com.astitva.collabflow.workspace.repository.WorkspaceMemberRepository;
+import com.astitva.collabflow.workspace.service.WorkspaceAccessService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,13 +19,16 @@ import java.util.UUID;
 
 /**
  * Service layer for project-related business logic.
+ *
+ * This service uses WorkspaceAccessService for workspace membership
+ * and role-based permission checks.
  */
 @Service
 @RequiredArgsConstructor
 public class ProjectService {
 
     private final ProjectRepository projectRepository;
-    private final WorkspaceMemberRepository workspaceMemberRepository;
+    private final WorkspaceAccessService workspaceAccessService;
 
     /**
      * Creates a project inside a workspace.
@@ -39,9 +40,8 @@ public class ProjectService {
      */
     @Transactional
     public ProjectResponse createProject(UUID workspaceId, UUID currentUserId, CreateProjectRequest request) {
-        WorkspaceMember membership = getMembership(workspaceId, currentUserId);
-
-        validateCanManageProjects(membership);
+        WorkspaceMember membership = workspaceAccessService.getMembership(workspaceId, currentUserId);
+        workspaceAccessService.validateCanManageProjects(membership);
 
         String normalizedName = request.name().trim();
 
@@ -71,7 +71,7 @@ public class ProjectService {
      */
     @Transactional(readOnly = true)
     public List<ProjectResponse> getProjects(UUID workspaceId, UUID currentUserId) {
-        getMembership(workspaceId, currentUserId);
+        workspaceAccessService.validateCanViewWorkspace(workspaceId, currentUserId);
 
         return projectRepository.findByWorkspace_IdAndArchivedFalseOrderByCreatedAtDesc(workspaceId)
                 .stream()
@@ -88,8 +88,10 @@ public class ProjectService {
      */
     @Transactional(readOnly = true)
     public ProjectResponse getProjectById(UUID workspaceId, UUID projectId, UUID currentUserId) {
-        getMembership(workspaceId, currentUserId);
+        workspaceAccessService.validateCanViewWorkspace(workspaceId, currentUserId);
+
         Project project = getProject(workspaceId, projectId);
+
         return mapToResponse(project);
     }
 
@@ -108,9 +110,12 @@ public class ProjectService {
             UUID currentUserId,
             UpdateProjectRequest request
     ) {
-        WorkspaceMember membership = getMembership(workspaceId, currentUserId);
-        validateCanManageProjects(membership);
+        WorkspaceMember membership = workspaceAccessService.getMembership(workspaceId, currentUserId);
+
+        workspaceAccessService.validateCanManageProjects(membership);
+
         validateAtLeastOneFieldPresent(request);
+
         Project project = getProject(workspaceId, projectId);
 
         if (request.name() != null) {
@@ -152,35 +157,14 @@ public class ProjectService {
      */
     @Transactional
     public void archiveProject(UUID workspaceId, UUID projectId, UUID currentUserId) {
-        WorkspaceMember membership = getMembership(workspaceId, currentUserId);
-        validateCanManageProjects(membership);
+        WorkspaceMember membership = workspaceAccessService.getMembership(workspaceId, currentUserId);
+
+        workspaceAccessService.validateCanManageProjects(membership);
+
         Project project = getProject(workspaceId, projectId);
 
         project.setArchived(true);
         project.setStatus(ProjectStatus.ARCHIVED);
-    }
-
-    /**
-     * Fetches membership of user inside workspace.
-     *
-     * If membership does not exist, we return "Workspace not found".
-     * This prevents exposing whether workspace exists to non-members.
-     */
-    private WorkspaceMember getMembership(UUID workspaceId, UUID userId) {
-        return workspaceMemberRepository
-                .findByWorkspace_IdAndUser_Id(workspaceId, userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Workspace not found"));
-    }
-
-    /**
-     * Checks whether user can manage projects.
-     *
-     * VIEWER can only read projects.
-     */
-    private void validateCanManageProjects(WorkspaceMember membership) {
-        if (membership.getRole() == WorkspaceRole.VIEWER) {
-            throw new ForbiddenException("You do not have permission to manage projects");
-        }
     }
 
     /**
