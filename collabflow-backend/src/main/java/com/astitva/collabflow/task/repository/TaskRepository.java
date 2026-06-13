@@ -58,4 +58,11 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
               AND t.archived = false
             """)
     Integer findMaxPositionByBoardColumnId(UUID boardColumnId);
+
+    /**
+     * Finds all active tasks inside a board column ordered by position.
+     *
+     * Used while moving/reordering tasks.
+     */
+    List<Task> findByBoardColumn_IdAndArchivedFalseOrderByPositionAsc(UUID boardColumnId);
 }
