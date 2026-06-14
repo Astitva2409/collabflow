@@ -89,4 +89,25 @@ public class WorkspaceAccessService {
     public void validateCanManageMembers(WorkspaceMember membership) {
         validateOwnerOrAdmin(membership);
     }
+
+    /**
+     * Validate user can add comments.
+     *
+     * VIEWER can only read comments.
+     */
+    public void validateCanAddComments(WorkspaceMember membership) {
+        if (membership.getRole() == WorkspaceRole.VIEWER) {
+            throw new ForbiddenException("You do not have permission to add comments");
+        }
+    }
+
+    /**
+     * Checks whether user is OWNER or ADMIN.
+     *
+     * Useful for delete permissions where OWNER/ADMIN can delete any comment.
+     */
+    public boolean isOwnerOrAdmin(WorkspaceMember membership) {
+        return membership.getRole() == WorkspaceRole.OWNER ||
+                membership.getRole() == WorkspaceRole.ADMIN;
+    }
 }
