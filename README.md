@@ -2,7 +2,7 @@
 
 CollabFlow is a full-stack project collaboration and Kanban management platform built with **Spring Boot** and **React**.
 
-The project is designed as a resume-level full-stack application demonstrating authentication, authorization, workspace-based collaboration, member management, project management, Kanban board workflows, task management, clean REST API design, database migrations, Docker-based local development, and scalable backend architecture.
+The project is designed as a resume-level full-stack application demonstrating authentication, authorization, workspace-based collaboration, member management, project management, Kanban board workflows, task management, task comments, clean REST API design, database migrations, Docker-based local development, and scalable backend architecture.
 
 ---
 
@@ -82,8 +82,8 @@ The project is designed as a resume-level full-stack application demonstrating a
 - Custom `UserDetailsService`
 - Stateless authentication using JWT
 - Clean JSON responses for:
-    - `401 Unauthorized`
-    - `403 Forbidden`
+  - `401 Unauthorized`
+  - `403 Forbidden`
 - Role-based application security foundation
 
 ### Common Backend Foundation
@@ -104,10 +104,10 @@ The project is designed as a resume-level full-stack application demonstrating a
 - Get workspace by ID
 - Workspace membership model
 - Workspace roles:
-    - `OWNER`
-    - `ADMIN`
-    - `MEMBER`
-    - `VIEWER`
+  - `OWNER`
+  - `ADMIN`
+  - `MEMBER`
+  - `VIEWER`
 - Add workspace member
 - List workspace members
 - Update member role
@@ -129,10 +129,10 @@ The project is designed as a resume-level full-stack application demonstrating a
 
 - Auto-create default board when a project is created
 - Auto-create default Kanban columns:
-    - `TODO`
-    - `IN_PROGRESS`
-    - `REVIEW`
-    - `DONE`
+  - `TODO`
+  - `IN_PROGRESS`
+  - `REVIEW`
+  - `DONE`
 - Get board with ordered columns
 - One project currently has one default board
 
@@ -144,10 +144,10 @@ The project is designed as a resume-level full-stack application demonstrating a
 - Fetch all active tasks for a project
 - Fetch task by ID
 - Update task details:
-    - title
-    - description
-    - priority
-    - due date
+  - title
+  - description
+  - priority
+  - due date
 - Move task between Kanban columns
 - Reorder task within the same column
 - Assign task to a workspace member
@@ -157,6 +157,17 @@ The project is designed as a resume-level full-stack application demonstrating a
 - Task status is derived from `board_column_id`
 - One assignee per task currently supported
 - `VIEWER` role restricted from task management actions
+
+### Task Comments Module
+
+- Add comment to a task
+- Fetch all active comments for a task
+- Soft-delete/archive comments
+- Comment author can delete own comment
+- Workspace `OWNER` or `ADMIN` can delete any comment
+- `VIEWER` role restricted from adding comments
+- Workspace member access validation reused for comment APIs
+- Task, project, and workspace relationship validation before comment operations
 
 ---
 
@@ -173,6 +184,7 @@ collabflow/
 │   │   ├── project/
 │   │   ├── board/
 │   │   ├── task/
+│   │   ├── comment/
 │   │   └── common/
 │   │
 │   ├── src/main/resources/
@@ -249,6 +261,14 @@ PATCH  /api/v1/workspaces/{workspaceId}/projects/{projectId}/tasks/{taskId}
 PATCH  /api/v1/workspaces/{workspaceId}/projects/{projectId}/tasks/{taskId}/move
 PATCH  /api/v1/workspaces/{workspaceId}/projects/{projectId}/tasks/{taskId}/assign
 DELETE /api/v1/workspaces/{workspaceId}/projects/{projectId}/tasks/{taskId}
+```
+
+### Task Comment APIs
+
+```http
+POST   /api/v1/workspaces/{workspaceId}/projects/{projectId}/tasks/{taskId}/comments
+GET    /api/v1/workspaces/{workspaceId}/projects/{projectId}/tasks/{taskId}/comments
+DELETE /api/v1/workspaces/{workspaceId}/projects/{projectId}/tasks/{taskId}/comments/{commentId}
 ```
 
 ---
@@ -357,6 +377,7 @@ V3__create_workspace_tables.sql
 V4__create_projects_table.sql
 V5__create_board_tables.sql
 V6__create_tasks_table.sql
+V7__create_task_comments_table.sql
 ```
 
 Flyway migration history can be checked in the database table:
@@ -379,14 +400,12 @@ User
                     └── Board
                           └── BoardColumn
                                 └── Task
+                                      └── TaskComment
 ```
 
 Upcoming relationship structure:
 
 ```text
-Task
-  └── Comment
-
 Task
   └── ActivityLog
 
@@ -442,7 +461,7 @@ VIEWER
 ```text
 OWNER  -> Full workspace control
 ADMIN  -> Can manage workspace members and workspace resources
-MEMBER -> Can manage projects and tasks
+MEMBER -> Can manage projects, tasks, and comments
 VIEWER -> Read-only access
 ```
 
@@ -468,6 +487,13 @@ Board access:
 Task management:
 - OWNER, ADMIN, and MEMBER can create/update/move/assign/archive tasks.
 - VIEWER can only view tasks.
+
+Task comments:
+- Any workspace member can view comments.
+- OWNER, ADMIN, and MEMBER can add comments.
+- VIEWER can only view comments.
+- Comment author can delete own comment.
+- Workspace OWNER or ADMIN can delete any comment.
 ```
 
 ---
@@ -539,6 +565,8 @@ SELECT * FROM boards;
 SELECT * FROM board_columns ORDER BY board_id, position;
 
 SELECT * FROM tasks;
+
+SELECT * FROM task_comments;
 ```
 
 Task verification query:
@@ -561,13 +589,29 @@ LEFT JOIN users assignee ON t.assigned_to = assignee.id
 ORDER BY bc.position, t.position;
 ```
 
+Task comments verification query:
+
+```sql
+SELECT 
+    c.id,
+    c.content,
+    t.title AS task_title,
+    u.email AS author_email,
+    c.archived,
+    c.created_at,
+    c.updated_at
+FROM task_comments c
+JOIN tasks t ON c.task_id = t.id
+JOIN users u ON c.author_id = u.id
+ORDER BY c.created_at;
+```
+
 ---
 
 ## Planned Features
 
 Upcoming backend features:
 
-- Task comments
 - Activity logs
 - Notifications
 - File attachments
@@ -587,6 +631,7 @@ Upcoming frontend features:
 - Kanban board UI
 - Task creation modal
 - Task detail drawer
+- Comments UI
 - Member management UI
 - Responsive layout
 - Protected routes
@@ -639,6 +684,7 @@ This project demonstrates:
 - Kanban workflow modeling
 - Task movement and position normalization
 - Soft delete/archive pattern
+- Comment ownership and permission handling
 
 ---
 
@@ -652,7 +698,8 @@ Workspace member management: Completed
 Project module: Completed
 Board module: Completed
 Task module: Completed
-Task comments module: Upcoming
+Task comments module: Completed
+Activity logs module: Upcoming
 Frontend implementation: Upcoming
 Deployment: Planned
 ```
