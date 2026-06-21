@@ -2,7 +2,7 @@
 
 CollabFlow is a full-stack project collaboration and Kanban management platform built with **Spring Boot** and **React**.
 
-The project is designed as a resume-level full-stack application demonstrating authentication, authorization, workspace-based collaboration, member management, project management, Kanban board workflows, task management, task comments, clean REST API design, database migrations, Docker-based local development, and scalable backend architecture.
+The project is designed as a resume-level full-stack application demonstrating authentication, authorization, workspace-based collaboration, member management, project management, Kanban board workflows, task management, task comments, activity logs, clean REST API design, database migrations, Docker-based local development, and scalable backend architecture.
 
 ---
 
@@ -21,6 +21,7 @@ The project is designed as a resume-level full-stack application demonstrating a
 - [Authentication Flow](#authentication-flow)
 - [Authorization Model](#authorization-model)
 - [Task Workflow Design](#task-workflow-design)
+- [Activity Log Design](#activity-log-design)
 - [Local Database Access Using DBeaver](#local-database-access-using-dbeaver)
 - [Planned Features](#planned-features)
 - [Deployment Plan](#deployment-plan)
@@ -169,6 +170,20 @@ The project is designed as a resume-level full-stack application demonstrating a
 - Workspace member access validation reused for comment APIs
 - Task, project, and workspace relationship validation before comment operations
 
+### Activity Logs Module
+
+- Track workspace, project, task, and comment activities
+- Store actor, target type, target ID, activity type, description, and timestamp
+- Fetch workspace-level activity feed
+- Fetch project-level activity feed
+- Activity logging integrated into selected flows:
+  - workspace created
+  - project created
+  - task created
+  - task moved
+  - comment added
+- Reusable `ActivityLogService` for cross-module activity tracking
+
 ---
 
 ## Project Structure
@@ -185,6 +200,7 @@ collabflow/
 │   │   ├── board/
 │   │   ├── task/
 │   │   ├── comment/
+│   │   ├── activity/
 │   │   └── common/
 │   │
 │   ├── src/main/resources/
@@ -269,6 +285,13 @@ DELETE /api/v1/workspaces/{workspaceId}/projects/{projectId}/tasks/{taskId}
 POST   /api/v1/workspaces/{workspaceId}/projects/{projectId}/tasks/{taskId}/comments
 GET    /api/v1/workspaces/{workspaceId}/projects/{projectId}/tasks/{taskId}/comments
 DELETE /api/v1/workspaces/{workspaceId}/projects/{projectId}/tasks/{taskId}/comments/{commentId}
+```
+
+### Activity Log APIs
+
+```http
+GET /api/v1/workspaces/{workspaceId}/activities
+GET /api/v1/workspaces/{workspaceId}/activities/projects/{projectId}
 ```
 
 ---
@@ -378,6 +401,7 @@ V4__create_projects_table.sql
 V5__create_board_tables.sql
 V6__create_tasks_table.sql
 V7__create_task_comments_table.sql
+V8__create_activity_logs_table.sql
 ```
 
 Flyway migration history can be checked in the database table:
@@ -400,17 +424,18 @@ User
                     └── Board
                           └── BoardColumn
                                 └── Task
-                                      └── TaskComment
+                                      ├── TaskComment
+                                      └── ActivityLog
 ```
 
 Upcoming relationship structure:
 
 ```text
 Task
-  └── ActivityLog
-
-Task
   └── Attachment
+
+User
+  └── Notification
 ```
 
 ---
@@ -494,6 +519,9 @@ Task comments:
 - VIEWER can only view comments.
 - Comment author can delete own comment.
 - Workspace OWNER or ADMIN can delete any comment.
+
+Activity logs:
+- Any workspace member can view workspace/project activity logs.
 ```
 
 ---
@@ -537,6 +565,43 @@ When a task is moved or archived, positions are normalized so active tasks remai
 
 ---
 
+## Activity Log Design
+
+Activity logs capture important collaboration events across the workspace and project lifecycle.
+
+Each activity log stores:
+
+```text
+workspace_id
+project_id
+actor_id
+target_id
+target_type
+activity_type
+description
+created_at
+```
+
+Examples of tracked activities:
+
+```text
+WORKSPACE_CREATED
+PROJECT_CREATED
+TASK_CREATED
+TASK_MOVED
+COMMENT_ADDED
+```
+
+Example activity description:
+
+```text
+Moved task 'Design Task Module' from TODO to IN_PROGRESS
+```
+
+Activity logs provide the foundation for future activity feed UI, audit trail, notifications, and analytics.
+
+---
+
 ## Local Database Access Using DBeaver
 
 Create a PostgreSQL connection in DBeaver using:
@@ -567,6 +632,8 @@ SELECT * FROM board_columns ORDER BY board_id, position;
 SELECT * FROM tasks;
 
 SELECT * FROM task_comments;
+
+SELECT * FROM activity_logs ORDER BY created_at DESC;
 ```
 
 Task verification query:
@@ -606,13 +673,30 @@ JOIN users u ON c.author_id = u.id
 ORDER BY c.created_at;
 ```
 
+Activity logs verification query:
+
+```sql
+SELECT
+    al.id,
+    al.activity_type,
+    al.target_type,
+    al.description,
+    u.email AS actor_email,
+    al.workspace_id,
+    al.project_id,
+    al.target_id,
+    al.created_at
+FROM activity_logs al
+JOIN users u ON al.actor_id = u.id
+ORDER BY al.created_at DESC;
+```
+
 ---
 
 ## Planned Features
 
 Upcoming backend features:
 
-- Activity logs
 - Notifications
 - File attachments
 - Dashboard analytics
@@ -632,6 +716,7 @@ Upcoming frontend features:
 - Task creation modal
 - Task detail drawer
 - Comments UI
+- Activity feed UI
 - Member management UI
 - Responsive layout
 - Protected routes
@@ -685,6 +770,7 @@ This project demonstrates:
 - Task movement and position normalization
 - Soft delete/archive pattern
 - Comment ownership and permission handling
+- Activity feed and audit trail design
 
 ---
 
@@ -699,7 +785,7 @@ Project module: Completed
 Board module: Completed
 Task module: Completed
 Task comments module: Completed
-Activity logs module: Upcoming
+Activity logs module: Completed
 Frontend implementation: Upcoming
 Deployment: Planned
 ```
