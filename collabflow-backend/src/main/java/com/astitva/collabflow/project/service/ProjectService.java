@@ -1,5 +1,6 @@
 package com.astitva.collabflow.project.service;
 
+import com.astitva.collabflow.activity.service.ActivityLogService;
 import com.astitva.collabflow.board.service.BoardService;
 import com.astitva.collabflow.common.exception.BadRequestException;
 import com.astitva.collabflow.common.exception.ResourceNotFoundException;
@@ -31,6 +32,7 @@ public class ProjectService {
     private final ProjectRepository projectRepository;
     private final WorkspaceAccessService workspaceAccessService;
     private final BoardService boardService;
+    private final ActivityLogService activityLogService;
 
     /**
      * Creates a project inside a workspace.
@@ -63,6 +65,8 @@ public class ProjectService {
         Project savedProject = projectRepository.save(project);
 
         boardService.createDefaultBoardForProject(savedProject);
+        activityLogService.logProjectCreated(membership.getWorkspace(), savedProject, membership.getUser());
+
         return mapToResponse(savedProject);
     }
 

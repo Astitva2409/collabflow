@@ -1,5 +1,6 @@
 package com.astitva.collabflow.workspace.service;
 
+import com.astitva.collabflow.activity.service.ActivityLogService;
 import com.astitva.collabflow.common.exception.BadRequestException;
 import com.astitva.collabflow.common.exception.ResourceNotFoundException;
 import com.astitva.collabflow.user.entity.User;
@@ -34,6 +35,7 @@ public class WorkspaceService {
     private final WorkspaceMemberRepository workspaceMemberRepository;
     private final UserRepository userRepository;
     private final WorkspaceAccessService workspaceAccessService;
+    private final ActivityLogService activityLogService;
 
     /**
      * Creates a new workspace.
@@ -70,6 +72,7 @@ public class WorkspaceService {
                 .build();
 
         WorkspaceMember savedMembership = workspaceMemberRepository.save(ownerMembership);
+        activityLogService.logWorkspaceCreated(savedWorkspace, currentUser);
         return mapToResponse(savedWorkspace, savedMembership.getRole());
     }
 

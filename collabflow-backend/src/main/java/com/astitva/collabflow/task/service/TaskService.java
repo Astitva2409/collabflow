@@ -1,5 +1,6 @@
 package com.astitva.collabflow.task.service;
 
+import com.astitva.collabflow.activity.service.ActivityLogService;
 import com.astitva.collabflow.board.entity.Board;
 import com.astitva.collabflow.board.entity.BoardColumn;
 import com.astitva.collabflow.board.repository.BoardColumnRepository;
@@ -48,6 +49,7 @@ public class TaskService {
     private final BoardColumnRepository boardColumnRepository;
     private final UserRepository userRepository;
     private final WorkspaceAccessService workspaceAccessService;
+    private final ActivityLogService activityLogService;
 
     /**
      * Creates a new task inside a project.
@@ -95,6 +97,9 @@ public class TaskService {
                 .build();
 
         Task savedTask = taskRepository.save(task);
+
+        activityLogService.logTaskCreated(currentUserMembership.getWorkspace(),
+                project, currentUserMembership.getUser(), savedTask.getId(), savedTask.getTitle());
 
         return mapToResponse(savedTask);
     }
@@ -228,6 +233,8 @@ public class TaskService {
 
         Task task = getTask(projectId, taskId);
 
+        String fromColumnName = task.getBoardColumn().getName();
+
         BoardColumn sourceColumn = task.getBoardColumn();
 
         BoardColumn targetColumn = resolveTargetColumn(board, request.boardColumnId());
@@ -239,6 +246,13 @@ public class TaskService {
         } else {
             moveTaskToDifferentColumn(task, sourceColumn, targetColumn, request.position());
         }
+
+        String toColumnName = task.getBoardColumn().getName();
+
+        activityLogService
+                .logTaskMoved(membership.getWorkspace(),
+                        project, membership.getUser(), task.getId(), task.getTitle(),
+                        fromColumnName, toColumnName);
 
         return mapToResponse(task);
     }

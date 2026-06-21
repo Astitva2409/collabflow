@@ -1,5 +1,6 @@
 package com.astitva.collabflow.comment.service;
 
+import com.astitva.collabflow.activity.service.ActivityLogService;
 import com.astitva.collabflow.comment.dto.CommentResponse;
 import com.astitva.collabflow.comment.dto.CreateCommentRequest;
 import com.astitva.collabflow.comment.entity.TaskComment;
@@ -30,6 +31,7 @@ public class TaskCommentService {
     private final TaskRepository taskRepository;
     private final ProjectRepository projectRepository;
     private final WorkspaceAccessService workspaceAccessService;
+    private final ActivityLogService activityLogService;
 
     /**
      * Adds a comment to a task.
@@ -64,6 +66,9 @@ public class TaskCommentService {
                 .build();
 
         TaskComment savedComment = taskCommentRepository.save(comment);
+
+        activityLogService.logCommentAdded(membership.getWorkspace(), task.getProject(),
+                membership.getUser(), savedComment.getId(), task.getTitle());
 
         return mapToResponse(savedComment);
     }
