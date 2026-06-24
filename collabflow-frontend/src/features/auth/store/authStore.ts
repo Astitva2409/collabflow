@@ -6,8 +6,11 @@ type AuthState = {
   user: AuthUser | null;
   accessToken: string | null;
   isAuthenticated: boolean;
+  isAuthLoading: boolean;
+
   setAuth: (accessToken: string, user: AuthUser) => void;
   setUser: (user: AuthUser | null) => void;
+  setAuthLoading: (isLoading: boolean) => void;
   logout: () => void;
 };
 
@@ -17,6 +20,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   accessToken: initialToken,
   isAuthenticated: Boolean(initialToken),
+  isAuthLoading: Boolean(initialToken),
 
   setAuth: (accessToken, user) => {
     localStorage.setItem(TOKEN_STORAGE_KEY, accessToken);
@@ -25,11 +29,22 @@ export const useAuthStore = create<AuthState>((set) => ({
       accessToken,
       user,
       isAuthenticated: true,
+      isAuthLoading: false,
     });
   },
 
   setUser: (user) => {
-    set({ user });
+    set({
+      user,
+      isAuthenticated: Boolean(user),
+      isAuthLoading: false,
+    });
+  },
+
+  setAuthLoading: (isLoading) => {
+    set({
+      isAuthLoading: isLoading,
+    });
   },
 
   logout: () => {
@@ -39,6 +54,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       user: null,
       accessToken: null,
       isAuthenticated: false,
+      isAuthLoading: false,
     });
   },
 }));
