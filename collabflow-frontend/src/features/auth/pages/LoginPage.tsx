@@ -22,7 +22,7 @@ export default function LoginPage() {
     mutationFn: authApi.login,
     onSuccess: (data) => {
       setAuth(data.accessToken, data.user);
-      navigate("/dashboard");
+      navigate("/dashboard", { replace: true });
     },
     onError: () => {
       alert("Login failed. Please check credentials.");
