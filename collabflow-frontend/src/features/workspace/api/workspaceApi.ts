@@ -14,6 +14,14 @@ export const workspaceApi = {
     return response.data.data || [];
   },
 
+  getWorkspaceById: async (workspaceId: string): Promise<Workspace> => {
+    const response = await apiClient.get<ApiResponse<Workspace>>(
+      `/workspaces/${workspaceId}`
+    );
+
+    return response.data.data as Workspace;
+  },
+
   createWorkspace: async (
     payload: CreateWorkspaceRequest
   ): Promise<Workspace> => {

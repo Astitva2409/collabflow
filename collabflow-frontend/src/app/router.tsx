@@ -7,6 +7,8 @@ import RegisterPage from "../features/auth/pages/RegisterPage";
 import DashboardPage from "../pages/DashboardPage";
 import NotFoundPage from "../pages/NotFoundPage";
 import { useAuthStore } from "../features/auth/store/authStore";
+import WorkspacePage from "../pages/WorkspacePage";
+import BoardPage from "../pages/BoardPage";
 
 function LoadingScreen() {
   return (
@@ -80,5 +82,21 @@ export const router = createBrowserRouter([
   {
     path: "*",
     element: <NotFoundPage />,
+  },
+  {
+    path: "/workspaces/:workspaceId",
+    element: (
+      <ProtectedRoute>
+        <WorkspacePage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/workspaces/:workspaceId/projects/:projectId/board",
+    element: (
+      <ProtectedRoute>
+        <BoardPage />
+      </ProtectedRoute>
+    ),
   },
 ]);
