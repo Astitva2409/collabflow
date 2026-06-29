@@ -1,20 +1,25 @@
+import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 
 import { boardApi } from "../features/board/api/boardApi";
 import { taskApi } from "../features/task/api/taskApi";
 import BoardColumn from "../features/board/components/BoardColumn";
+import CreateTaskForm from "../features/task/components/CreateTaskForm";
 import { useAuthStore } from "../features/auth/store/authStore";
 import type { Task } from "../features/task/types/task.types";
 
 export default function BoardPage() {
   const navigate = useNavigate();
+
   const { workspaceId, projectId } = useParams<{
     workspaceId: string;
     projectId: string;
   }>();
 
   const { user, logout } = useAuthStore();
+
+  const [showCreateTaskForm, setShowCreateTaskForm] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -132,12 +137,34 @@ export default function BoardPage() {
               </div>
 
               <button
-                disabled
-                className="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white opacity-60"
+                onClick={() => setShowCreateTaskForm((prev) => !prev)}
+                className="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700"
               >
-                Create Task Soon
+                {showCreateTaskForm ? "Close Form" : "Create Task"}
               </button>
             </div>
+
+            {showCreateTaskForm && (
+              <div className="mb-6 max-w-2xl rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                <h3 className="text-lg font-semibold text-slate-900">
+                  Create New Task
+                </h3>
+
+                <p className="mt-1 text-sm text-slate-500">
+                  Add a task to one of the Kanban columns. By default, tasks
+                  are added to TODO.
+                </p>
+
+                <div className="mt-5">
+                  <CreateTaskForm
+                    workspaceId={workspaceId}
+                    projectId={projectId}
+                    columns={board.columns}
+                    onSuccess={() => setShowCreateTaskForm(false)}
+                  />
+                </div>
+              </div>
+            )}
 
             <div className="overflow-x-auto pb-6">
               <div className="flex gap-5">

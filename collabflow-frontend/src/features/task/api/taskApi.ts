@@ -1,5 +1,5 @@
 import { apiClient } from "../../../lib/axios";
-import type { ApiResponse, Task } from "../types/task.types";
+import type { ApiResponse, CreateTaskRequest, Task } from "../types/task.types";
 
 export const taskApi = {
   getTasks: async (
@@ -11,5 +11,18 @@ export const taskApi = {
     );
 
     return response.data.data || [];
+  },
+
+  createTask: async (
+    workspaceId: string,
+    projectId: string,
+    payload: CreateTaskRequest
+  ): Promise<Task> => {
+    const response = await apiClient.post<ApiResponse<Task>>(
+      `/workspaces/${workspaceId}/projects/${projectId}/tasks`,
+      payload
+    );
+
+    return response.data.data as Task;
   },
 };

@@ -18,6 +18,15 @@ export type Task = {
   updatedAt: string;
 };
 
+export type CreateTaskRequest = {
+  title: string;
+  description?: string;
+  priority?: TaskPriority;
+  assignedTo?: string;
+  dueDate?: string;
+  boardColumnId?: string;
+};
+
 export type ApiResponse<T> = {
   success: boolean;
   message: string;
