@@ -4,10 +4,19 @@ import TaskCard from "../../task/components/TaskCard";
 
 type BoardColumnProps = {
   column: BoardColumnType;
+  columns: BoardColumnType[];
   tasks: Task[];
+  workspaceId: string;
+  projectId: string;
 };
 
-export default function BoardColumn({ column, tasks }: BoardColumnProps) {
+export default function BoardColumn({
+  column,
+  columns,
+  tasks,
+  workspaceId,
+  projectId,
+}: BoardColumnProps) {
   return (
     <section className="flex min-h-[500px] w-80 shrink-0 flex-col rounded-2xl bg-slate-100 p-4">
       <div className="mb-4 flex items-center justify-between">
@@ -24,7 +33,15 @@ export default function BoardColumn({ column, tasks }: BoardColumnProps) {
             No tasks
           </div>
         ) : (
-          tasks.map((task) => <TaskCard key={task.id} task={task} />)
+          tasks.map((task) => (
+            <TaskCard
+              key={task.id}
+              task={task}
+              workspaceId={workspaceId}
+              projectId={projectId}
+              columns={columns}
+            />
+          ))
         )}
       </div>
     </section>

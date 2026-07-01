@@ -27,6 +27,11 @@ export type CreateTaskRequest = {
   boardColumnId?: string;
 };
 
+export type MoveTaskRequest = {
+  boardColumnId: string;
+  position: number;
+};
+
 export type ApiResponse<T> = {
   success: boolean;
   message: string;

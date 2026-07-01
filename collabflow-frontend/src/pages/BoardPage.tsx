@@ -172,7 +172,10 @@ export default function BoardPage() {
                   <BoardColumn
                     key={column.id}
                     column={column}
+                    columns={board.columns}
                     tasks={getTasksForColumn(column.id)}
+                    workspaceId={workspaceId}
+                    projectId={projectId}
                   />
                 ))}
               </div>
