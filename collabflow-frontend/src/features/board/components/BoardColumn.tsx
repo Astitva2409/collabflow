@@ -8,6 +8,7 @@ type BoardColumnProps = {
   tasks: Task[];
   workspaceId: string;
   projectId: string;
+  onOpenTask: (taskId: string) => void;
 };
 
 export default function BoardColumn({
@@ -16,6 +17,7 @@ export default function BoardColumn({
   tasks,
   workspaceId,
   projectId,
+  onOpenTask,
 }: BoardColumnProps) {
   return (
     <section className="flex min-h-[500px] w-80 shrink-0 flex-col rounded-2xl bg-slate-100 p-4">
@@ -40,6 +42,7 @@ export default function BoardColumn({
               workspaceId={workspaceId}
               projectId={projectId}
               columns={columns}
+              onOpenTask={onOpenTask}
             />
           ))
         )}

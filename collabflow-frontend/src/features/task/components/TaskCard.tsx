@@ -10,6 +10,7 @@ type TaskCardProps = {
   workspaceId: string;
   projectId: string;
   columns: BoardColumn[];
+  onOpenTask: (taskId: string) => void;
 };
 
 const priorityStyles: Record<Task["priority"], string> = {
@@ -24,6 +25,7 @@ export default function TaskCard({
   workspaceId,
   projectId,
   columns,
+  onOpenTask,
 }: TaskCardProps) {
   const queryClient = useQueryClient();
 
@@ -53,34 +55,46 @@ export default function TaskCard({
   const isSameColumn = targetColumnId === task.boardColumnId;
 
   return (
-    <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      <div className="flex items-start justify-between gap-3">
-        <h4 className="text-sm font-semibold text-slate-900">{task.title}</h4>
+    <article className="group rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md">
+      <button
+        type="button"
+        onClick={() => onOpenTask(task.id)}
+        className="block w-full cursor-pointer rounded-lg text-left focus:outline-none focus:ring-2 focus:ring-blue-200"
+      >
+        <div className="flex items-start justify-between gap-3">
+          <h4 className="text-sm font-semibold text-slate-900 transition-colors group-hover:text-blue-700">
+            {task.title}
+          </h4>
 
-        <span
-          className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold ${priorityStyles[task.priority]}`}
-        >
-          {task.priority}
-        </span>
-      </div>
+          <span
+            className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold ${priorityStyles[task.priority]}`}
+          >
+            {task.priority}
+          </span>
+        </div>
 
-      {task.description && (
-        <p className="mt-2 line-clamp-2 text-sm text-slate-500">
-          {task.description}
+        {task.description && (
+          <p className="mt-2 line-clamp-2 text-sm text-slate-500">
+            {task.description}
+          </p>
+        )}
+
+        <div className="mt-4 flex flex-col gap-1 text-xs text-slate-400">
+          {task.assignedToName ? (
+            <span>Assigned to: {task.assignedToName}</span>
+          ) : (
+            <span>Unassigned</span>
+          )}
+
+          {task.dueDate && (
+            <span>Due: {new Date(task.dueDate).toLocaleDateString()}</span>
+          )}
+        </div>
+
+        <p className="mt-3 text-[11px] font-medium text-slate-400 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+          Click to view details
         </p>
-      )}
-
-      <div className="mt-4 flex flex-col gap-1 text-xs text-slate-400">
-        {task.assignedToName ? (
-          <span>Assigned to: {task.assignedToName}</span>
-        ) : (
-          <span>Unassigned</span>
-        )}
-
-        {task.dueDate && (
-          <span>Due: {new Date(task.dueDate).toLocaleDateString()}</span>
-        )}
-      </div>
+      </button>
 
       <div className="mt-4 border-t border-slate-100 pt-3">
         <label className="text-xs font-medium text-slate-500">Move to</label>

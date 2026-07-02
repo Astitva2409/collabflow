@@ -18,6 +18,18 @@ export const taskApi = {
     return response.data.data || [];
   },
 
+  getTaskById: async (
+    workspaceId: string,
+    projectId: string,
+    taskId: string
+  ): Promise<Task> => {
+    const response = await apiClient.get<ApiResponse<Task>>(
+      `/workspaces/${workspaceId}/projects/${projectId}/tasks/${taskId}`
+    );
+
+    return response.data.data as Task;
+  },
+
   createTask: async (
     workspaceId: string,
     projectId: string,

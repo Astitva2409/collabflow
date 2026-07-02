@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-
+import TaskDetailsModal from "../features/task/components/TaskDetailsModal";
 import { boardApi } from "../features/board/api/boardApi";
 import { taskApi } from "../features/task/api/taskApi";
 import BoardColumn from "../features/board/components/BoardColumn";
@@ -20,6 +20,8 @@ export default function BoardPage() {
   const { user, logout } = useAuthStore();
 
   const [showCreateTaskForm, setShowCreateTaskForm] = useState(false);
+
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
 
   const handleLogout = () => {
     logout();
@@ -176,6 +178,7 @@ export default function BoardPage() {
                     tasks={getTasksForColumn(column.id)}
                     workspaceId={workspaceId}
                     projectId={projectId}
+                    onOpenTask={setSelectedTaskId}
                   />
                 ))}
               </div>
@@ -183,6 +186,14 @@ export default function BoardPage() {
           </>
         )}
       </section>
+      {selectedTaskId && (
+        <TaskDetailsModal
+          workspaceId={workspaceId}
+          projectId={projectId}
+          taskId={selectedTaskId}
+          onClose={() => setSelectedTaskId(null)}
+        />
+      )}
     </main>
   );
 }
