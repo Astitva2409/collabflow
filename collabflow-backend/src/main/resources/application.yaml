@@ -1,22 +1,22 @@
 server:
-  port: 8080
+  port: ${PORT:8080}
 
 spring:
   application:
     name: collabflow-backend
 
   datasource:
-    url: jdbc:postgresql://localhost:5433/collabflow
-    username: postgres
-    password: postgres
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5433/collabflow}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:postgres}
 
   jpa:
     hibernate:
       ddl-auto: validate
-    show-sql: true
+    show-sql: ${SHOW_SQL:true}
     properties:
       hibernate:
-        format_sql: true
+        format_sql: ${FORMAT_SQL:true}
 
   flyway:
     enabled: true
@@ -25,9 +25,12 @@ spring:
 logging:
   level:
     org.springframework: INFO
-    com.astitva.collabflow: DEBUG
+    com.astitva.collabflow: ${APP_LOG_LEVEL:DEBUG}
 
 app:
   jwt:
-    secret: 0123456789012345678901234567890123456789012345678901234567890123
-    expiration-ms: 86400000
+    secret: ${JWT_SECRET:0123456789012345678901234567890123456789012345678901234567890123}
+    expiration-ms: ${JWT_EXPIRATION_MS:86400000}
+
+  cors:
+    allowed-origins: ${FRONTEND_ALLOWED_ORIGINS:http://localhost:5173}
