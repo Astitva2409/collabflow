@@ -8,6 +8,8 @@ import BoardColumn from "../features/board/components/BoardColumn";
 import CreateTaskForm from "../features/task/components/CreateTaskForm";
 import { useAuthStore } from "../features/auth/store/authStore";
 import type { Task } from "../features/task/types/task.types";
+import { activityApi } from "../features/activity/api/activityApi";
+import ActivityFeed from "../features/activity/components/ActivityFeed";
 
 export default function BoardPage() {
   const navigate = useNavigate();
@@ -18,9 +20,7 @@ export default function BoardPage() {
   }>();
 
   const { user, logout } = useAuthStore();
-
   const [showCreateTaskForm, setShowCreateTaskForm] = useState(false);
-
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
 
   const handleLogout = () => {
@@ -47,6 +47,20 @@ export default function BoardPage() {
     queryKey: ["tasks", workspaceId, projectId],
     queryFn: () =>
       taskApi.getTasks(workspaceId as string, projectId as string),
+    enabled: Boolean(workspaceId && projectId),
+  });
+
+  const {
+    data: projectActivities = [],
+    isLoading: isActivitiesLoading,
+    isError: isActivitiesError,
+  } = useQuery({
+    queryKey: ["project-activities", workspaceId, projectId],
+    queryFn: () =>
+      activityApi.getProjectActivities(
+        workspaceId as string,
+        projectId as string
+      ),
     enabled: Boolean(workspaceId && projectId),
   });
 
@@ -182,6 +196,14 @@ export default function BoardPage() {
                   />
                 ))}
               </div>
+            </div>
+            <div className="mt-4">
+              <ActivityFeed
+                title="Project Activity"
+                activities={projectActivities}
+                isLoading={isActivitiesLoading}
+                isError={isActivitiesError}
+              />
             </div>
           </>
         )}

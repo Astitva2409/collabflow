@@ -42,6 +42,9 @@ export default function CreateProjectForm({
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["projects", workspaceId] });
+      queryClient.invalidateQueries({
+        queryKey: ["workspace-activities", workspaceId],
+      });
       reset();
       onSuccess?.();
     },

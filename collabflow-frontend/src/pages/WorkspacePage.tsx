@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-
 import { workspaceApi } from "../features/workspace/api/workspaceApi";
 import { projectApi } from "../features/project/api/projectApi";
 import ProjectCard from "../features/project/components/ProjectCard";
 import CreateProjectForm from "../features/project/components/CreateProjectForm";
 import { useAuthStore } from "../features/auth/store/authStore";
+import { activityApi } from "../features/activity/api/activityApi";
+import ActivityFeed from "../features/activity/components/ActivityFeed";
 
 export default function WorkspacePage() {
   const navigate = useNavigate();
@@ -36,6 +37,16 @@ export default function WorkspacePage() {
   } = useQuery({
     queryKey: ["projects", workspaceId],
     queryFn: () => projectApi.getProjects(workspaceId as string),
+    enabled: Boolean(workspaceId),
+  });
+
+  const {
+    data: workspaceActivities = [],
+    isLoading: isActivitiesLoading,
+    isError: isActivitiesError,
+  } = useQuery({
+    queryKey: ["workspace-activities", workspaceId],
+    queryFn: () => activityApi.getWorkspaceActivities(workspaceId as string),
     enabled: Boolean(workspaceId),
   });
 
@@ -174,6 +185,14 @@ export default function WorkspacePage() {
               ))}
             </div>
           )}
+        </div>
+        <div className="mt-10">
+          <ActivityFeed
+            title="Workspace Activity"
+            activities={workspaceActivities}
+            isLoading={isActivitiesLoading}
+            isError={isActivitiesError}
+          />
         </div>
       </section>
     </main>

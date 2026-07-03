@@ -71,6 +71,9 @@ export default function CreateTaskForm({
       queryClient.invalidateQueries({
         queryKey: ["tasks", workspaceId, projectId],
       });
+      queryClient.invalidateQueries({
+        queryKey: ["project-activities", workspaceId, projectId],
+      });
 
       reset({
         title: "",

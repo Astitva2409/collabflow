@@ -42,6 +42,9 @@ export default function TaskCard({
       queryClient.invalidateQueries({
         queryKey: ["tasks", workspaceId, projectId],
       });
+      queryClient.invalidateQueries({
+        queryKey: ["project-activities", workspaceId, projectId],
+      });
     },
 
     onError: (error: any) => {

@@ -71,6 +71,9 @@ export default function TaskDetailsModal({
       queryClient.invalidateQueries({
         queryKey: ["comments", workspaceId, projectId, taskId],
       });
+      queryClient.invalidateQueries({
+        queryKey: ["project-activities", workspaceId, projectId],
+      });
 
       reset({ content: "" });
     },
