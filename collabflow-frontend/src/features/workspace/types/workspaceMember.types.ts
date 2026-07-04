@@ -9,7 +9,7 @@ export type WorkspaceMember = {
 };
 
 export type AddWorkspaceMemberRequest = {
-  userId: string;
+  email: string;
   role: Exclude<WorkspaceMemberRole, "OWNER">;
 };
 

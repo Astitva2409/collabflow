@@ -112,19 +112,23 @@ public class WorkspaceService {
      */
     @Transactional
     public void addMember(UUID workspaceId, UUID currentUserId, AddMemberRequest request) {
-        WorkspaceMember currentUserMembership = workspaceAccessService.getMembership(workspaceId, currentUserId);
+        WorkspaceMember currentUserMembership =
+                workspaceAccessService.getMembership(workspaceId, currentUserId);
+
         workspaceAccessService.validateCanManageMembers(currentUserMembership);
 
         if (request.role() == WorkspaceRole.OWNER) {
             throw new BadRequestException("Cannot assign OWNER role while adding member");
         }
 
-        if (workspaceMemberRepository.existsByWorkspace_IdAndUser_Id(workspaceId, request.userId())) {
+        String normalizedEmail = request.email().trim().toLowerCase();
+
+        User user = userRepository.findByEmail(normalizedEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        if (workspaceMemberRepository.existsByWorkspace_IdAndUser_Id(workspaceId, user.getId())) {
             throw new BadRequestException("User is already a member of this workspace");
         }
-
-        User user = userRepository.findById(request.userId())
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         WorkspaceMember newMember = WorkspaceMember.builder()
                 .workspace(currentUserMembership.getWorkspace())

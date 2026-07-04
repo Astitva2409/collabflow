@@ -35,7 +35,7 @@ export default function WorkspaceMembersPanel({
   } = useForm<AddWorkspaceMemberFormValues>({
     resolver: zodResolver(addWorkspaceMemberSchema),
     defaultValues: {
-      userId: "",
+      email: "",
       role: "MEMBER",
     },
   });
@@ -43,7 +43,7 @@ export default function WorkspaceMembersPanel({
   const addMemberMutation = useMutation({
     mutationFn: (values: AddWorkspaceMemberFormValues) =>
       workspaceMemberApi.addMember(workspaceId, {
-        userId: values.userId,
+        email: values.email.trim().toLowerCase(),
         role: values.role,
       }),
 
@@ -53,7 +53,7 @@ export default function WorkspaceMembersPanel({
       });
 
       reset({
-        userId: "",
+        email: "",
         role: "MEMBER",
       });
     },
@@ -85,15 +85,15 @@ export default function WorkspaceMembersPanel({
       >
         <div>
           <input
-            type="text"
-            placeholder="Enter user ID to add"
-            {...register("userId")}
+            type="email"
+            placeholder="Enter member email"
+            {...register("email")}
             className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
           />
 
-          {errors.userId && (
+          {errors.email && (
             <p className="mt-1 text-sm text-red-500">
-              {errors.userId.message}
+              {errors.email.message}
             </p>
           )}
         </div>
