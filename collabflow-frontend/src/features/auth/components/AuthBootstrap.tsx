@@ -22,11 +22,16 @@ export default function AuthBootstrap({ children }: AuthBootstrapProps) {
       }
 
       try {
+        setAuthLoading(true);
+
         const currentUser = await authApi.getCurrentUser();
+
         setUser(currentUser);
       } catch (error) {
         console.log("Auth bootstrap failed:", error);
         logout();
+      } finally {
+        setAuthLoading(false);
       }
     };
 
