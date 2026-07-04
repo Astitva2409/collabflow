@@ -8,6 +8,11 @@ export type WorkspaceMember = {
   joinedAt: string;
 };
 
+export type AddWorkspaceMemberRequest = {
+  userId: string;
+  role: Exclude<WorkspaceMemberRole, "OWNER">;
+};
+
 export type ApiResponse<T> = {
   success: boolean;
   message: string;

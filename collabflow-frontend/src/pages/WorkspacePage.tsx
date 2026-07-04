@@ -8,6 +8,7 @@ import CreateProjectForm from "../features/project/components/CreateProjectForm"
 import { useAuthStore } from "../features/auth/store/authStore";
 import { activityApi } from "../features/activity/api/activityApi";
 import ActivityFeed from "../features/activity/components/ActivityFeed";
+import WorkspaceMembersPanel from "../features/workspace/components/WorkspaceMembersPanel";
 
 export default function WorkspacePage() {
   const navigate = useNavigate();
@@ -116,6 +117,12 @@ export default function WorkspacePage() {
             <p className="mt-2 text-slate-700">
               {workspace.description || "No description provided."}
             </p>
+          </div>
+        )}
+
+        {workspace && (
+          <div className="mt-6">
+            <WorkspaceMembersPanel workspaceId={workspaceId} />
           </div>
         )}
 
